@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace BayesSpamFilter
 {
     public class Program
     {
-        private string hamPath;
-        private string spamPath;
-        private decimal defaultCount = 0.01m;
+        private string hamLeanPath;
+        private string spamLearnPath;
+        private string hamTestPath;
+        private string spamTestPath;
+        private int hamFileCount;
+        private int spamFileCount;
+        private decimal defaultCount = 0.8m;
 
         static void Main(string[] args)
         {
@@ -21,29 +26,77 @@ namespace BayesSpamFilter
             PrintHeader();
             InitFilePaths();
 
-            var hamWordCounter = new WordCounter(hamPath);
-            var hamWordCountDictionary = hamWordCounter.GetWordCount();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Started the learning phase.");
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine();
+            Console.WriteLine();
 
-            var spamWordCounter = new WordCounter(spamPath);
-            var spamWordCountDictionary = spamWordCounter.GetWordCount();
+            var hamWordCounter = new WordCounter(hamLeanPath);
+            var hamCountByWord = hamWordCounter.GetWordCount();
+            hamFileCount = hamWordCounter.FileCount;
+            var spamWordCounter = new WordCounter(spamLearnPath);
+            var spamCountByWord = spamWordCounter.GetWordCount();
+            spamFileCount = spamWordCounter.FileCount;
+            var wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
 
-            var hamAndSpamCount = GetHamAndSpamCountDictionary(hamWordCountDictionary, spamWordCountDictionary);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Finished the learning phase.");
+            Console.WriteLine("------------------------------------------------");
 
+            var filePaths = Directory.GetFiles(hamTestPath);
+            var spamChecker = new SpamChecker(wordInfoDictionary);
+            foreach (var filePath in filePaths)
+            {
+                spamChecker.CalculateSpamProbability(filePath);
+            }
+
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Started the testing phase.");
+            Console.WriteLine("------------------------------------------------");
+
+
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Finished the testing phase.");
+            Console.WriteLine("------------------------------------------------");
+
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Started the testing phase.");
+            Console.WriteLine("------------------------------------------------");
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Finished the testing phase.");
+            Console.WriteLine("------------------------------------------------");
 
             PrintFooter();
         }
 
-        private Dictionary<string, CounterInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamWordCountDictionary, Dictionary<string, int> spamWordCountDictionary)
+        private Dictionary<string, WordInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
         {
-            var hamAndSpamCountDictionary = new Dictionary<string, CounterInfo>();
+            var hamAndSpamCountDictionary = new Dictionary<string, WordInfo>();
 
-            var allWords = hamWordCountDictionary.Keys.Concat(spamWordCountDictionary.Keys).Distinct().ToList();
+            var allWords = hamCountByWord.Keys.Concat(spamCountByWord.Keys).Distinct().ToList();
 
             foreach (var word in allWords)
             {
-                var hamCount = hamWordCountDictionary.ContainsKey(word) ? hamWordCountDictionary[word] : defaultCount;
-                var spamCount = spamWordCountDictionary.ContainsKey(word) ? spamWordCountDictionary[word] : defaultCount;
-                hamAndSpamCountDictionary.Add(word, new CounterInfo(hamCount, spamCount));
+                var hamCount = hamCountByWord.ContainsKey(word) ? hamCountByWord[word] : defaultCount;
+                var spamCount = spamCountByWord.ContainsKey(word) ? spamCountByWord[word] : defaultCount;
+                var hamProbability = hamCount / hamFileCount;
+                var spamProbability = spamCount / spamFileCount;
+                hamAndSpamCountDictionary.Add(word, new WordInfo(hamProbability, spamProbability));
             }
 
             return hamAndSpamCountDictionary;
@@ -51,17 +104,34 @@ namespace BayesSpamFilter
 
         private void InitFilePaths()
         {
-            Console.WriteLine("Ham Directory Path:");
-            var inputHamPath = Console.ReadLine();
-            hamPath = string.IsNullOrWhiteSpace(inputHamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Learning\Ham"
-                : inputHamPath;
+            Console.WriteLine("Ham Learn Directory Path:");
+            var inputLearnHamPath = Console.ReadLine();
+            hamLeanPath = string.IsNullOrWhiteSpace(inputLearnHamPath)
+                ? @"C:\git\dist\BayesSpamFilter\Mails\Learn\Ham"
+                : inputLearnHamPath;
+            Console.WriteLine();
 
-            Console.WriteLine("Spam Directory Path:");
-            var inputSpamPath = Console.ReadLine();
-            spamPath = string.IsNullOrWhiteSpace(inputSpamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Learning\Spam"
-                : inputSpamPath;
+            Console.WriteLine("Spam Learn Directory Path:");
+            var inputLearnSpamPath = Console.ReadLine();
+            spamLearnPath = string.IsNullOrWhiteSpace(inputLearnSpamPath)
+                ? @"C:\git\dist\BayesSpamFilter\Mails\Learn\Spam"
+                : inputLearnSpamPath;
+            Console.WriteLine();
+
+            Console.WriteLine("Ham Test Directory Path:");
+            var inputTestHamPath = Console.ReadLine();
+            hamTestPath = string.IsNullOrWhiteSpace(inputTestHamPath)
+                ? @"C:\git\dist\BayesSpamFilter\Mails\Test\Ham"
+                : inputTestHamPath;
+            Console.WriteLine();
+
+
+            Console.WriteLine("Spam Test Directory Path:");
+            var inputTestSpamPath = Console.ReadLine();
+            spamTestPath = string.IsNullOrWhiteSpace(inputTestSpamPath)
+                ? @"C:\git\dist\BayesSpamFilter\Mails\Test\Spam"
+                : inputTestHamPath;
+            Console.WriteLine();
         }
 
         private static void PrintHeader()

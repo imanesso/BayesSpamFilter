@@ -7,6 +7,7 @@ namespace BayesSpamFilter
     public class WordCounter
     {
         private readonly string inputPath;
+        public int FileCount { get; private set; }
 
         public WordCounter(string inputPath)
         {
@@ -23,24 +24,22 @@ namespace BayesSpamFilter
 
                 if (filePaths.Any())
                 {
+                    FileCount = filePaths.Length;
+
                     foreach (var filePath in filePaths)
                     {
                         var allLines = File.ReadAllLines(filePath);
+                        var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
 
-                        foreach (var line in allLines)
+                        foreach (var word in words)
                         {
-                            var words = line.ToLowerInvariant().Split(' ');
-
-                            foreach (var word in words)
+                            if (wordCountDictionary.ContainsKey(word))
                             {
-                                if (wordCountDictionary.ContainsKey(word))
-                                {
-                                    wordCountDictionary[word]++;
-                                }
-                                else
-                                {
-                                    wordCountDictionary.Add(word, 1);
-                                }
+                                wordCountDictionary[word]++;
+                            }
+                            else
+                            {
+                                wordCountDictionary.Add(word, 1);
                             }
                         }
                     }
