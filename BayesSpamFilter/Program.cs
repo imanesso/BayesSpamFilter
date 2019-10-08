@@ -107,21 +107,21 @@ namespace BayesSpamFilter
             Console.WriteLine("Ham Learn Directory Path:");
             var inputLearnHamPath = Console.ReadLine();
             hamLeanPath = string.IsNullOrWhiteSpace(inputLearnHamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Learn\Ham"
+                ? GetRelativePath("ham-anlern")
                 : inputLearnHamPath;
             Console.WriteLine();
 
             Console.WriteLine("Spam Learn Directory Path:");
             var inputLearnSpamPath = Console.ReadLine();
             spamLearnPath = string.IsNullOrWhiteSpace(inputLearnSpamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Learn\Spam"
+                ? GetRelativePath("spam-anlern")
                 : inputLearnSpamPath;
             Console.WriteLine();
 
             Console.WriteLine("Ham Test Directory Path:");
             var inputTestHamPath = Console.ReadLine();
             hamTestPath = string.IsNullOrWhiteSpace(inputTestHamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Test\Ham"
+                ? GetRelativePath("ham-test")
                 : inputTestHamPath;
             Console.WriteLine();
 
@@ -129,7 +129,7 @@ namespace BayesSpamFilter
             Console.WriteLine("Spam Test Directory Path:");
             var inputTestSpamPath = Console.ReadLine();
             spamTestPath = string.IsNullOrWhiteSpace(inputTestSpamPath)
-                ? @"C:\git\dist\BayesSpamFilter\Mails\Test\Spam"
+                ? GetRelativePath("spam-test")
                 : inputTestHamPath;
             Console.WriteLine();
         }
@@ -153,6 +153,14 @@ namespace BayesSpamFilter
             Console.WriteLine("Calculation finished");
             Console.WriteLine("------------------------------------------------");
             Console.ReadKey();
+        }
+
+        private static string GetRelativePath(string directoryPath)
+        {
+            var projectFolder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            var path = Path.Combine(projectFolder, "InputFiles", directoryPath);
+
+            return path;
         }
     }
 }
