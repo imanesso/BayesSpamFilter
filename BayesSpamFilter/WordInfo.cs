@@ -2,10 +2,10 @@
 {
     public class WordInfo
     {
-        public decimal HamProbability { get; }
-        public decimal SpamProbability { get; }
+        public double HamProbability { get; }
+        public double SpamProbability { get; }
 
-        public WordInfo(decimal hamProbability, decimal spamProbability)
+        public WordInfo(double hamProbability, double spamProbability)
         {
             HamProbability = hamProbability;
             SpamProbability = spamProbability;

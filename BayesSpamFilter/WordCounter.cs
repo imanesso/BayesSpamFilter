@@ -33,25 +33,28 @@ namespace BayesSpamFilter
 
                         foreach (var word in words)
                         {
-                            if (wordCountDictionary.ContainsKey(word))
+                            if (!string.IsNullOrEmpty(word))
                             {
-                                wordCountDictionary[word]++;
-                            }
-                            else
-                            {
-                                wordCountDictionary.Add(word, 1);
+                                if (wordCountDictionary.ContainsKey(word))
+                                {
+                                    wordCountDictionary[word]++;
+                                }
+                                else
+                                {
+                                    wordCountDictionary.Add(word, 1);
+                                }
                             }
                         }
                     }
                 }
                 else
                 {
-                    throw new FileNotFoundException($"The input directory '{inputPath}' is empty.");
+                    throw new FileNotFoundException();
                 }
             }
             else
             {
-                throw new DirectoryNotFoundException($"The input directory '{inputPath}' not found.");
+                throw new DirectoryNotFoundException();
             }
 
             return wordCountDictionary;

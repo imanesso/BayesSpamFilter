@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -13,30 +14,29 @@ namespace BayesSpamFilter
             WordInfoDictionary = wordInfoDictionary;
         }
 
-        public decimal CalculateSpamProbability(string filePath)
+        public double CalculateSpamProbability(string filePath)
         {
-            var probability = 1.0m;
             if (File.Exists(filePath))
             {
+                var n = 0d;
                 var allLines = File.ReadAllLines(filePath);
                 var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
 
                 foreach (var word in words)
                 {
-                    if (WordInfoDictionary.Keys.Contains(word))
+                    if (!string.IsNullOrEmpty(word))
                     {
-                        probability *= WordInfoDictionary[word].SpamProbability /
-                                       (WordInfoDictionary[word].SpamProbability +
-                                        WordInfoDictionary[word].HamProbability);
+                        if (WordInfoDictionary.Keys.Contains(word))
+                        {
+                            n += Math.Log(WordInfoDictionary[word].HamProbability) -
+                                 Math.Log(WordInfoDictionary[word].SpamProbability);
+                        }
                     }
                 }
-            }
-            else
-            {
-                throw new FileNotFoundException($"File '{filePath}' was not found.");
-            }
 
-            return probability;
+                return 1 / (1 + Math.Exp(n));
+            }
+            throw new FileNotFoundException();
         }
     }
 }
