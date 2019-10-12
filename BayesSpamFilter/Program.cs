@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 
@@ -14,7 +13,7 @@ namespace BayesSpamFilter
         private string spamTestPath;
         private int hamFileCount;
         private int spamFileCount;
-        private decimal defaultCount = 0.8m;
+        private double defaultCount = 0.5d;
 
         static void Main(string[] args)
         {
@@ -47,11 +46,23 @@ namespace BayesSpamFilter
             Console.WriteLine("Finished the learning phase.");
             Console.WriteLine("------------------------------------------------");
 
-            var filePaths = Directory.GetFiles(hamTestPath);
+            var foundSpamMails = 0;
+            var foundHamMails = 0;
+
+            var filePaths = Directory.GetFiles(spamTestPath);
             var spamChecker = new SpamChecker(wordInfoDictionary);
             foreach (var filePath in filePaths)
             {
                 bool isSpam = spamChecker.IsSpam(filePath, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
+
+                if (isSpam)
+                {
+                    foundSpamMails++;
+                }
+                else
+                {
+                    foundHamMails++;
+                }
 
                 string text = isSpam? filePath.Split("\\").Last() +" is probably Spam"
                     : filePath.Split("\\").Last() + " is probably not Spam";
@@ -59,6 +70,7 @@ namespace BayesSpamFilter
                 Console.WriteLine(text);
             }
 
+            Console.WriteLine($"Spam {foundSpamMails}, Ham {foundHamMails}.");
 
             Console.WriteLine();
             Console.WriteLine();

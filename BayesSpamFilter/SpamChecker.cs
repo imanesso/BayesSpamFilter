@@ -18,19 +18,17 @@ namespace BayesSpamFilter
         public bool IsSpam(string filePath, int spamFileCount, Dictionary<string, int> spamCountByWord, int hamFileCount, Dictionary<string, int> hamCountByWord)
         {
             var sumQ = 0.0;
-            var wordCounter = 0;
             if (File.Exists(filePath))
             {
                 var allLines = File.ReadAllLines(filePath);
-                var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
+                var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).ToList();
 
                 foreach (var word in words)
-                {                    
+                {
                     var q = CalculateQ(word, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
                     sumQ += q;
-                    wordCounter++;
                 }
-                return sumQ / wordCounter > 1;
+                return (sumQ / words.Count) * ((double)spamFileCount / (double)hamFileCount) > 1;
             }
             else
             {
@@ -44,20 +42,27 @@ namespace BayesSpamFilter
             int countSpamMails, Dictionary<string, int> spamWordList,
             int countNotSpamMails, Dictionary<string, int> notSpamWordList)
         {
-            double wordCountSpam = 1;
-            if (spamWordList.ContainsKey(word))
+            if (spamWordList.ContainsKey(word) || notSpamWordList.ContainsKey(word))
             {
-                wordCountSpam = spamWordList[word];
+                double wordCountSpam = 1;
+                if (spamWordList.ContainsKey(word))
+                {
+                    wordCountSpam = spamWordList[word];
+                }
+
+                double pWordIsSpam = 0.5 * wordCountSpam / countSpamMails;
+                double wordCountNotSpam = 1;
+                if (notSpamWordList.ContainsKey(word))
+                {
+                    wordCountNotSpam = notSpamWordList[word];
+                }
+
+                double pWordIsNotSpam = 0.5 * wordCountNotSpam / countNotSpamMails;
+                double q = pWordIsSpam / pWordIsNotSpam;
+                return q;
             }
-            double Ph1e = 0.5 * wordCountSpam / countSpamMails;
-            double wordCountNotSpam = 1;
-            if (notSpamWordList.ContainsKey(word))
-            {
-                wordCountNotSpam = notSpamWordList[word];
-            }
-            double Ph2e = 0.5 * wordCountNotSpam / countNotSpamMails;
-            double q = Ph1e / Ph2e;
-            return q;
+
+            return 1;
         }
     }
 }

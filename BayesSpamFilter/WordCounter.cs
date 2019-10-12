@@ -29,7 +29,7 @@ namespace BayesSpamFilter
                     foreach (var filePath in filePaths)
                     {
                         var allLines = File.ReadAllLines(filePath);
-                        var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
+                        var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).ToList();
 
                         foreach (var word in words)
                         {
