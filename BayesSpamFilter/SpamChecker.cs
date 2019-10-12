@@ -6,16 +6,9 @@ namespace BayesSpamFilter
 {
     public class SpamChecker
     {
-        public Dictionary<string, WordInfo> WordInfoDictionary { get; }
-
-        public SpamChecker(Dictionary<string, WordInfo> wordInfoDictionary)
-        {
-            WordInfoDictionary = wordInfoDictionary;
-        }
-
         //As our normal Calculatioin did not work, we tried the following source:
         //https://netmatze.wordpress.com/2013/05/25/building-a-simple-spam-filter-with-naive-bayes-classifier-and-c/
-        public bool IsSpam(string filePath, int spamFileCount, Dictionary<string, int> spamCountByWord, int hamFileCount, Dictionary<string, int> hamCountByWord)
+        public double CalculateSpamProbability(string filePath, int spamFileCount, Dictionary<string, int> spamCountByWord, int hamFileCount, Dictionary<string, int> hamCountByWord)
         {
             var sumQ = 0.0;
             if (File.Exists(filePath))
@@ -25,10 +18,13 @@ namespace BayesSpamFilter
 
                 foreach (var word in words)
                 {
-                    var q = CalculateQ(word, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
-                    sumQ += q;
+                    if (!string.IsNullOrWhiteSpace(word))
+                    {
+                        var q = CalculateQ(word, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
+                        sumQ += q * ((double)spamFileCount / hamFileCount);
+                    }
                 }
-                return (sumQ / words.Count) * ((double)spamFileCount / (double)hamFileCount) > 1;
+                return (sumQ / words.Count);
             }
             else
             {

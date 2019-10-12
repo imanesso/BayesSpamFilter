@@ -33,13 +33,16 @@ namespace BayesSpamFilter
 
                         foreach (var word in words)
                         {
-                            if (wordCountDictionary.ContainsKey(word))
+                            if (!string.IsNullOrWhiteSpace(word))
                             {
-                                wordCountDictionary[word]++;
-                            }
-                            else
-                            {
-                                wordCountDictionary.Add(word, 1);
+                                if (wordCountDictionary.ContainsKey(word))
+                                {
+                                    wordCountDictionary[word]++;
+                                }
+                                else
+                                {
+                                    wordCountDictionary.Add(word, 1);
+                                }
                             }
                         }
                     }

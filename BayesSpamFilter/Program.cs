@@ -11,9 +11,11 @@ namespace BayesSpamFilter
         private string spamLearnPath;
         private string hamTestPath;
         private string spamTestPath;
+        private string hamCalibrationPath;
+        private string spamCalibrationPath;
         private int hamFileCount;
         private int spamFileCount;
-        private double defaultCount = 0.5d;
+        private double threshold = 1;
 
         static void Main(string[] args)
         {
@@ -27,7 +29,7 @@ namespace BayesSpamFilter
             InitFilePaths();
 
             Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the learning phase.");
+            Console.WriteLine("Starting the learning phase.");
             Console.WriteLine("------------------------------------------------");
             Console.WriteLine();
             Console.WriteLine();
@@ -38,7 +40,6 @@ namespace BayesSpamFilter
             var spamWordCounter = new WordCounter(spamLearnPath);
             var spamCountByWord = spamWordCounter.GetWordCount();
             spamFileCount = spamWordCounter.FileCount;
-            var wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
 
             Console.WriteLine();
             Console.WriteLine();
@@ -46,52 +47,37 @@ namespace BayesSpamFilter
             Console.WriteLine("Finished the learning phase.");
             Console.WriteLine("------------------------------------------------");
 
-            var foundSpamMails = 0;
-            var foundHamMails = 0;
 
-            var filePaths = Directory.GetFiles(spamTestPath);
-            var spamChecker = new SpamChecker(wordInfoDictionary);
-            foreach (var filePath in filePaths)
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine("Starting the calibration phase.");
+            Console.WriteLine("------------------------------------------------");
+
+            while (FindSpamMails(spamCountByWord, hamCountByWord, hamCalibrationPath) > 10)
             {
-                bool isSpam = spamChecker.IsSpam(filePath, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
-
-                if (isSpam)
-                {
-                    foundSpamMails++;
-                }
-                else
-                {
-                    foundHamMails++;
-                }
-
-                string text = isSpam? filePath.Split("\\").Last() +" is probably Spam"
-                    : filePath.Split("\\").Last() + " is probably not Spam";
-
-                Console.WriteLine(text);
+                threshold += 0.01;
             }
 
-            Console.WriteLine($"Spam {foundSpamMails}, Ham {foundHamMails}.");
-
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the testing phase.");
-            Console.WriteLine("------------------------------------------------");
-
-
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Finished the testing phase.");
+            Console.WriteLine("Finished the calibration phase.");
             Console.WriteLine("------------------------------------------------");
 
 
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the testing phase.");
+            Console.WriteLine("Starting the testing phase.");
             Console.WriteLine("------------------------------------------------");
+
+            FindSpamMails(spamCountByWord, hamCountByWord, hamTestPath);
+
+            Console.WriteLine();
+            Console.WriteLine();
+
+            FindSpamMails(spamCountByWord, hamCountByWord, spamTestPath);
 
             Console.WriteLine();
             Console.WriteLine();
@@ -102,22 +88,38 @@ namespace BayesSpamFilter
             PrintFooter();
         }
 
-        private Dictionary<string, WordInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
+        private double FindSpamMails(Dictionary<string, int> spamCountByWord, Dictionary<string, int> hamCountByWord, string testPath)
         {
-            var hamAndSpamCountDictionary = new Dictionary<string, WordInfo>();
-
-            var allWords = hamCountByWord.Keys.Concat(spamCountByWord.Keys).Distinct().ToList();
-
-            foreach (var word in allWords)
+            List<double> probs = new List<double>();
+            var filePaths = Directory.GetFiles(testPath);
+            var spamChecker = new SpamChecker();
+            var foundHamMails = 0;
+            var foundSpamMails = 0;
+            foreach (var filePath in filePaths)
             {
-                var hamCount = hamCountByWord.ContainsKey(word) ? hamCountByWord[word] : defaultCount;
-                var spamCount = spamCountByWord.ContainsKey(word) ? spamCountByWord[word] : defaultCount;
-                var hamProbability = hamCount / hamFileCount;
-                var spamProbability = spamCount / spamFileCount;
-                hamAndSpamCountDictionary.Add(word, new WordInfo(hamProbability, spamProbability));
+                double spamProbability = spamChecker.CalculateSpamProbability(filePath, spamFileCount, spamCountByWord, hamFileCount, hamCountByWord);
+                probs.Add(spamProbability);
+                string text = spamProbability > threshold
+                    ? filePath.Split("\\").Last() + " is probably Spam"
+                    : filePath.Split("\\").Last() + " is probably not Spam";
+
+                if (spamProbability > threshold)
+                {
+                    foundSpamMails++;
+                }
+                else
+                {
+                    foundHamMails++;
+                }
+
+                Console.WriteLine(text);
             }
 
-            return hamAndSpamCountDictionary;
+            Console.WriteLine();
+            Console.WriteLine($"Calculated Spam and Ham Mails for Path {testPath}");
+            Console.WriteLine($"Result: Ham = {foundHamMails}; Spam = {foundSpamMails}");
+            Console.WriteLine($"Result: Spam % {(double)foundSpamMails / filePaths.Length * 100}.");
+            return (double)foundSpamMails / filePaths.Length * 100;
         }
 
         private void InitFilePaths()
@@ -136,13 +138,28 @@ namespace BayesSpamFilter
                 : inputLearnSpamPath;
             Console.WriteLine();
 
+
+            Console.WriteLine("Ham Calibration Directory Path:");
+            var inputCalibrationHamPath = Console.ReadLine();
+            hamCalibrationPath = string.IsNullOrWhiteSpace(inputCalibrationHamPath)
+                ? GetRelativePath("ham-kallibrierung")
+                : inputCalibrationHamPath;
+            Console.WriteLine();
+
+            Console.WriteLine("Spam Calibration Directory Path:");
+            var inputCalibrationSpamPath = Console.ReadLine();
+            spamCalibrationPath = string.IsNullOrWhiteSpace(inputCalibrationSpamPath)
+                ? GetRelativePath("spam-kallibrierung")
+                : inputCalibrationSpamPath;
+            Console.WriteLine();
+
+
             Console.WriteLine("Ham Test Directory Path:");
             var inputTestHamPath = Console.ReadLine();
             hamTestPath = string.IsNullOrWhiteSpace(inputTestHamPath)
                 ? GetRelativePath("ham-test")
                 : inputTestHamPath;
             Console.WriteLine();
-
 
             Console.WriteLine("Spam Test Directory Path:");
             var inputTestSpamPath = Console.ReadLine();
@@ -176,7 +193,7 @@ namespace BayesSpamFilter
         private static string GetRelativePath(string directoryPath)
         {
             var projectFolder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
-            var file = Path.Combine(projectFolder, "InputFiles",directoryPath);
+            var file = Path.Combine(projectFolder, "InputFiles", directoryPath);
 
             return file;
         }
