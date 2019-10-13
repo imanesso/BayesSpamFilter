@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 
 namespace BayesSpamFilter
 {
@@ -115,11 +114,11 @@ namespace BayesSpamFilter
                     }
                     else
                     {
-                        Console.WriteLine($"Optimal threshold is {threshold}");
+                        Console.WriteLine($"Optimal threshold is {threshold}.");
                         Console.WriteLine($"{hamMarkedAsSpam} Ham Mails of totally {hamFilePaths.Length} where marked as Spam.");
                         Console.WriteLine($"{spamMarkedAsHam} Spam Mails of totally {spamFilePaths.Length} where marked as Ham.");
-                        Console.WriteLine($"Ham Error Ration:  {hamMarkedAsSpamRatio * 100}%");
-                        Console.WriteLine($"Spam Error Ration: {spamMarkedAsHamRatio * 100}%");
+                        Console.WriteLine($"Ham Error Ration:  {Math.Round(hamMarkedAsSpamRatio * 100, 4, MidpointRounding.ToEven)}%.");
+                        Console.WriteLine($"Spam Error Ration: {Math.Round(spamMarkedAsHamRatio * 100, 4, MidpointRounding.ToEven)}%.");
                     }
                 }
             }
@@ -165,7 +164,7 @@ namespace BayesSpamFilter
             Console.WriteLine($"Checked files in folder {folderPath}.");
             Console.WriteLine($"All files should have been marked as {(shouldBeSpam ? "Spam" : "Ham")}.");
             Console.WriteLine($"{errors.Count} of {filePaths.Length} {(shouldBeSpam ? "Spam" : "Ham")} Mails where marked as {(shouldBeSpam ? "Ham" : "Spam")}.");
-            Console.WriteLine($"Error Ration is {(double)errors.Count / filePaths.Length * 100}%");
+            Console.WriteLine($"Error Ration is {Math.Round((double)errors.Count / filePaths.Length * 100, 4, MidpointRounding.ToEven)}%.");
         }
 
         private void BuildWordInfoDictionary()
@@ -178,7 +177,7 @@ namespace BayesSpamFilter
             spamFileCount = spamWordCounter.FileCount;
             wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
 
-            Console.WriteLine($"Generated word probability dictionary with {wordInfoDictionary.Count} words");
+            Console.WriteLine($"Generated word probability dictionary with {wordInfoDictionary.Count} words.");
         }
 
         private Dictionary<string, WordProbabilityInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
@@ -241,8 +240,8 @@ namespace BayesSpamFilter
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Calculation finished");
-            Console.WriteLine("Press any key to close");
+            Console.WriteLine("Calculation finished.");
+            Console.WriteLine("Press any key to close.");
             Console.WriteLine("------------------------------------------------");
             Console.ReadKey();
         }
