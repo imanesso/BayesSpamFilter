@@ -4,12 +4,12 @@ using System.Linq;
 
 namespace BayesSpamFilter
 {
-    public class WordCounter
+    public class WordProbabilityGenerator
     {
         private readonly string inputPath;
         public int FileCount { get; private set; }
 
-        public WordCounter(string inputPath)
+        public WordProbabilityGenerator(string inputPath)
         {
             this.inputPath = inputPath;
         }

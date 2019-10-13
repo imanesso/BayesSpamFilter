@@ -7,34 +7,36 @@ namespace BayesSpamFilter
 {
     public class SpamChecker
     {
-        public Dictionary<string, WordInfo> WordInfoDictionary { get; }
+        public Dictionary<string, WordProbabilityInfo> WordInfoDictionary { get; }
 
-        public SpamChecker(Dictionary<string, WordInfo> wordInfoDictionary)
+        public SpamChecker(Dictionary<string, WordProbabilityInfo> wordInfoDictionary)
         {
             WordInfoDictionary = wordInfoDictionary;
         }
 
-        public double CalculateSpamProbability(string filePath)
+        public double GetSpamProbability(string filePath)
         {
             if (File.Exists(filePath))
             {
-                var n = 0d;
+                var probabilitySum = 0d;
                 var allLines = File.ReadAllLines(filePath);
                 var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
-
+                var wordCount = 0;
                 foreach (var word in words)
                 {
                     if (!string.IsNullOrEmpty(word))
                     {
                         if (WordInfoDictionary.Keys.Contains(word))
                         {
-                            n += Math.Log(WordInfoDictionary[word].HamProbability) -
-                                 Math.Log(WordInfoDictionary[word].SpamProbability);
+                            wordCount++;
+                            var wordProbability = WordInfoDictionary[word].SpamProbability /
+                                                  (WordInfoDictionary[word].SpamProbability + WordInfoDictionary[word].HamProbability);
+                            probabilitySum += wordProbability;
                         }
                     }
                 }
 
-                return 1 / (1 + Math.Exp(n));
+                return probabilitySum / wordCount;
             }
             throw new FileNotFoundException();
         }

@@ -17,10 +17,10 @@ namespace BayesSpamFilter
 
         private int hamFileCount;
         private int spamFileCount;
+        private Dictionary<string, WordProbabilityInfo> wordInfoDictionary;
 
-        private int minimumWordOccurrence = 3;
-        private double alpha = 0.000000000000000000000000000000001;
-        private double threshold = 0.9;
+        private double alpha = 0.000001;
+        private double threshold = 0.5;
 
         static void Main(string[] args)
         {
@@ -33,73 +33,64 @@ namespace BayesSpamFilter
             PrintHeader();
             InitFilePaths();
 
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the learning phase.");
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine();
-            Console.WriteLine();
+            PrintPhaseStart("learning");
+            BuildWordInfoDictionary();
+            PrintPhaseEnd("learning");
 
-            var wordInfoDictionary = BuildWordInfoDictionary();
+            PrintPhaseStart("calibration");
+            CalibrateThreshold(hamCalibrationPath, spamCalibrationPath);
+            PrintPhaseEnd("calibration");
 
+            PrintPhaseStart("testing");
+            RunBayesSpamFilter(hamTestPath);
             Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Finished the learning phase.");
-            Console.WriteLine("------------------------------------------------");
-
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the calibration phase.");
-            Console.WriteLine("------------------------------------------------");
-
-            CalibrateThreshold(hamCalibrationPath, spamCalibrationPath, wordInfoDictionary);
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Finished the calibration phase.");
-            Console.WriteLine("------------------------------------------------");
-
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Started the testing phase.");
-            Console.WriteLine("------------------------------------------------");
-
-            RunBayesSpamFilter(hamTestPath, wordInfoDictionary);
-            RunBayesSpamFilter(spamTestPath, wordInfoDictionary);
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------");
-            Console.WriteLine("Finished the testing phase.");
-            Console.WriteLine("------------------------------------------------");
+            RunBayesSpamFilter(spamTestPath);
+            PrintPhaseEnd("testing");
 
             PrintFooter();
         }
 
-        private void CalibrateThreshold(string hamCalibrationPath, string spamCalibrationPath, Dictionary<string, WordInfo> wordInfoDictionary)
+        private static void PrintPhaseStart(string phaseName)
+        {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine($"Started the {phaseName} phase.");
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        private static void PrintPhaseEnd(string phaseName)
+        {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine($"Finished the {phaseName} phase.");
+            Console.WriteLine("------------------------------------------------");
+        }
+
+        private void CalibrateThreshold(string hamCalibrationPath, string spamCalibrationPath)
         {
             if (Directory.Exists(hamCalibrationPath) && Directory.Exists(spamCalibrationPath))
             {
                 var spamChecker = new SpamChecker(wordInfoDictionary);
                 var hamFilePaths = Directory.GetFiles(hamCalibrationPath);
                 var spamFilePaths = Directory.GetFiles(spamCalibrationPath);
-                var hamMarkedAsSpam = 0;
-                var spamMarkedAsHam = 0;
+                var hamMarkedAsSpam = int.MaxValue;
+                var spamMarkedAsHam = int.MaxValue;
                 var hamMarkedAsSpamRatio = 0d;
                 var spamMarkedAsHamRatio = 0d;
 
 
-                while (hamMarkedAsSpamRatio <= spamMarkedAsHamRatio)
+                while (hamMarkedAsSpamRatio >= spamMarkedAsHamRatio)
                 {
-                    List<double> hamList = new List<double>();
+                    hamMarkedAsSpam = 0;
+                    spamMarkedAsHam = 0;
+
                     foreach (var hamFilePath in hamFilePaths)
                     {
-                        var spamProbability = spamChecker.CalculateSpamProbability(hamFilePath);
+                        var spamProbability = spamChecker.GetSpamProbability(hamFilePath);
                         if (spamProbability >= threshold)
                         {
                             hamMarkedAsSpam++;
@@ -108,7 +99,7 @@ namespace BayesSpamFilter
 
                     foreach (var spamFilePath in spamFilePaths)
                     {
-                        var spamProbability = spamChecker.CalculateSpamProbability(spamFilePath);
+                        var spamProbability = spamChecker.GetSpamProbability(spamFilePath);
                         if (spamProbability < threshold)
                         {
                             spamMarkedAsHam++;
@@ -118,13 +109,18 @@ namespace BayesSpamFilter
                     hamMarkedAsSpamRatio = (double)hamMarkedAsSpam / hamFilePaths.Length;
                     spamMarkedAsHamRatio = (double)spamMarkedAsHam / spamFilePaths.Length;
 
-                    if (hamMarkedAsSpamRatio <= spamMarkedAsHamRatio)
+                    if (hamMarkedAsSpamRatio >= spamMarkedAsHamRatio)
                     {
-                        threshold += 0.01;
+                        threshold += 0.0025;
                     }
-
-                    hamMarkedAsSpam = 0;
-                    spamMarkedAsHam = 0;
+                    else
+                    {
+                        Console.WriteLine($"Optimal threshold is {threshold}");
+                        Console.WriteLine($"{hamMarkedAsSpam} Ham Mails of totally {hamFilePaths.Length} where marked as Spam.");
+                        Console.WriteLine($"{spamMarkedAsHam} Spam Mails of totally {spamFilePaths.Length} where marked as Ham.");
+                        Console.WriteLine($"Ham Error Ration:  {hamMarkedAsSpamRatio * 100}%");
+                        Console.WriteLine($"Spam Error Ration: {spamMarkedAsHamRatio * 100}%");
+                    }
                 }
             }
             else
@@ -133,16 +129,30 @@ namespace BayesSpamFilter
             }
         }
 
-        private void RunBayesSpamFilter(string folderPath, Dictionary<string, WordInfo> wordInfoDictionary)
+        private void RunBayesSpamFilter(string folderPath)
         {
             if (Directory.Exists(folderPath))
             {
+                var shouldBeSpam = folderPath.Contains("spam-test");
+                List<double> errors = new List<double>();
+
                 var filePaths = Directory.GetFiles(folderPath);
                 var spamChecker = new SpamChecker(wordInfoDictionary);
                 foreach (var filePath in filePaths)
                 {
-                    var d = spamChecker.CalculateSpamProbability(filePath);
+                    var spamProbability = spamChecker.GetSpamProbability(filePath);
+
+                    if (shouldBeSpam && spamProbability <= threshold)
+                    {
+                        errors.Add(spamProbability);
+                    }
+                    else if (!shouldBeSpam && spamProbability >= threshold)
+                    {
+                        errors.Add(spamProbability);
+                    }
                 }
+
+                PrintTestResult(folderPath, shouldBeSpam, errors, filePaths);
             }
             else
             {
@@ -150,21 +160,30 @@ namespace BayesSpamFilter
             }
         }
 
-        private Dictionary<string, WordInfo> BuildWordInfoDictionary()
+        private static void PrintTestResult(string folderPath, bool shouldBeSpam, List<double> errors, string[] filePaths)
         {
-            var hamWordCounter = new WordCounter(hamLeanPath);
-            var hamCountByWord = hamWordCounter.GetWordCount();
-            hamFileCount = hamWordCounter.FileCount;
-            var spamWordCounter = new WordCounter(spamLearnPath);
-            var spamCountByWord = spamWordCounter.GetWordCount();
-            spamFileCount = spamWordCounter.FileCount;
-            var wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
-            return wordInfoDictionary;
+            Console.WriteLine($"Checked files in folder {folderPath}.");
+            Console.WriteLine($"All files should have been marked as {(shouldBeSpam ? "Spam" : "Ham")}.");
+            Console.WriteLine($"{errors.Count} of {filePaths.Length} {(shouldBeSpam ? "Spam" : "Ham")} Mails where marked as {(shouldBeSpam ? "Ham" : "Spam")}.");
+            Console.WriteLine($"Error Ration is {(double)errors.Count / filePaths.Length * 100}%");
         }
 
-        private Dictionary<string, WordInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
+        private void BuildWordInfoDictionary()
         {
-            var hamAndSpamCountDictionary = new Dictionary<string, WordInfo>();
+            var hamWordCounter = new WordProbabilityGenerator(hamLeanPath);
+            var hamCountByWord = hamWordCounter.GetWordCount();
+            hamFileCount = hamWordCounter.FileCount;
+            var spamWordCounter = new WordProbabilityGenerator(spamLearnPath);
+            var spamCountByWord = spamWordCounter.GetWordCount();
+            spamFileCount = spamWordCounter.FileCount;
+            wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
+
+            Console.WriteLine($"Generated word probability dictionary with {wordInfoDictionary.Count} words");
+        }
+
+        private Dictionary<string, WordProbabilityInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
+        {
+            var hamAndSpamCountDictionary = new Dictionary<string, WordProbabilityInfo>();
 
             var allWords = hamCountByWord.Keys.Concat(spamCountByWord.Keys).Distinct().ToList();
 
@@ -172,9 +191,9 @@ namespace BayesSpamFilter
             {
                 var hamCount = hamCountByWord.ContainsKey(word) ? hamCountByWord[word] : alpha;
                 var spamCount = spamCountByWord.ContainsKey(word) ? spamCountByWord[word] : alpha;
-                var hamProbability =  hamCount / hamFileCount;
+                var hamProbability = hamCount / hamFileCount;
                 var spamProbability = spamCount / spamFileCount;
-                hamAndSpamCountDictionary.Add(word, new WordInfo(hamProbability, spamProbability));
+                hamAndSpamCountDictionary.Add(word, new WordProbabilityInfo(hamProbability, spamProbability));
             }
 
             return hamAndSpamCountDictionary;
@@ -191,11 +210,11 @@ namespace BayesSpamFilter
             Console.WriteLine();
 
             hamCalibrationPath = GetRelativePath("ham-kalibrierung");
-            Console.WriteLine($"Ham Calibration Directory Path: {hamTestPath}");
+            Console.WriteLine($"Ham Calibration Directory Path: {hamCalibrationPath}");
             Console.WriteLine();
 
             spamCalibrationPath = GetRelativePath("spam-kalibrierung");
-            Console.WriteLine($"Spam Calibration Directory Path: {spamTestPath}");
+            Console.WriteLine($"Spam Calibration Directory Path: {spamCalibrationPath}");
             Console.WriteLine();
 
             hamTestPath = GetRelativePath("ham-test");
@@ -204,7 +223,6 @@ namespace BayesSpamFilter
 
             spamTestPath = GetRelativePath("spam-test");
             Console.WriteLine($"Spam Test Directory Path: {spamTestPath}");
-            Console.WriteLine();
         }
 
         private static void PrintHeader()
@@ -224,6 +242,7 @@ namespace BayesSpamFilter
             Console.WriteLine();
             Console.WriteLine("------------------------------------------------");
             Console.WriteLine("Calculation finished");
+            Console.WriteLine("Press any key to close");
             Console.WriteLine("------------------------------------------------");
             Console.ReadKey();
         }
