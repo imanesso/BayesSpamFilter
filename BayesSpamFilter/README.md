@@ -3,5 +3,10 @@ FHNW 5Ibb: Diskrete Stochastik
 
 Team: Jonathan James Bättig, Anessollah Ima
 
-## Ausführen
--Beim Ausführen des Programms hat man die Möglichkeit die Pfade zu den Ordnern zu verändern, aber wenn man die Pfade im Projekt verwenden möchte, dann kann man einfach Enter klicken
+## Ausführung
+Man kann das Projekt auf folgende Arten ausführen:
+
+-Man kann die .exe ausführen über den Pfad:
+ \BayesSpamFilter\BayesSpamFilter\bin\Release\netcoreapp2.2\win10-x64\BayesSpamFilter.exe
+
+-In Visual Studio
