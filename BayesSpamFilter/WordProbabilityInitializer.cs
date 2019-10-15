@@ -4,16 +4,24 @@ using System.Linq;
 
 namespace BayesSpamFilter
 {
-    public class WordProbabilityGenerator
+    public class WordProbabilityInitializer
     {
         private readonly string inputPath;
         public int FileCount { get; private set; }
 
-        public WordProbabilityGenerator(string inputPath)
+        /// <summary>
+        /// Constructor of the WordProbabilityInitializer.
+        /// </summary>
+        /// <param name="inputPath"> Path to a directory with email messages. </param>
+        public WordProbabilityInitializer(string inputPath)
         {
             this.inputPath = inputPath;
         }
 
+        /// <summary>
+        /// This Function calculates how many times each word is contained in given messages.
+        /// </summary>
+        /// <returns> Returns a dictionary with a word as the key and the given word count as the value. </returns>
         public Dictionary<string, int> GetWordCount()
         {
             var wordCountDictionary = new Dictionary<string, int>();

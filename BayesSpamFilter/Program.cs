@@ -169,10 +169,10 @@ namespace BayesSpamFilter
 
         private void BuildWordInfoDictionary()
         {
-            var hamWordCounter = new WordProbabilityGenerator(hamLeanPath);
+            var hamWordCounter = new WordProbabilityInitializer(hamLeanPath);
             var hamCountByWord = hamWordCounter.GetWordCount();
             hamFileCount = hamWordCounter.FileCount;
-            var spamWordCounter = new WordProbabilityGenerator(spamLearnPath);
+            var spamWordCounter = new WordProbabilityInitializer(spamLearnPath);
             var spamCountByWord = spamWordCounter.GetWordCount();
             spamFileCount = spamWordCounter.FileCount;
             wordInfoDictionary = GetHamAndSpamCountDictionary(hamCountByWord, spamCountByWord);
