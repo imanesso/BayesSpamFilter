@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -34,7 +35,7 @@ namespace BayesSpamFilter
         {
             PrintHeader();
             InitFilePaths();
-                        
+
             PrintPhaseStart("learning");
             BuildWordInfoDictionary();
             PrintPhaseEnd("learning");
@@ -180,7 +181,7 @@ namespace BayesSpamFilter
                     {
                         errors.Add(spamProbability);// These should be ham, but aren't marked by our filter
                     }
-                }                
+                }
                 PrintTestResult(folderPath, isInSpamFolder, errors, filePaths);
             }
             else
@@ -235,7 +236,7 @@ namespace BayesSpamFilter
 
                 // Both probabilities are added into the new dictionary using a POCO class
                 var hamProbability = hamCount / hamFileCount;
-                var spamProbability = spamCount / spamFileCount;                
+                var spamProbability = spamCount / spamFileCount;
                 hamAndSpamCountDictionary.Add(word, new WordProbabilityInfo(hamProbability, spamProbability));
             }
             return hamAndSpamCountDictionary;
@@ -296,7 +297,13 @@ namespace BayesSpamFilter
         /// <returns> The Path to the Directory. </returns>
         private static string GetRelativePath(string directoryPath)
         {
-            var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
+            //different directory if .exe is used directly
+            var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent;
+
+            if (Debugger.IsAttached)
+            {
+                directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
+            }
             if (directoryInfo != null)
             {
                 var projectFolder = directoryInfo.Parent.FullName;
