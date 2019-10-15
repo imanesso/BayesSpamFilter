@@ -22,7 +22,6 @@ Die Ausführung des Programmes führt zu folgendem Resultat. Wie wir zu diesem R
 ### Testing
 - 36 von 1510 Ham Mails wurden als Spam markiert.
 - Error Rate beträgt: 2.3841%.
-
 - 6 von 222 Spam Mails wurden als Ham markiert.
 - Error Rate beträgt: 2.7027%.
 
