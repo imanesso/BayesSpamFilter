@@ -34,23 +34,17 @@ namespace BayesSpamFilter
                 {
                     FileCount = filePaths.Length;
 
+                    //increments word counter for each distinct word if found
                     foreach (var filePath in filePaths)
-                    {
-                        var allLines = File.ReadAllLines(filePath);
-                        var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
-
-                        foreach (var word in words)
-                        {
+                    {                        
+                        foreach (var word in SpamChecker.GetDistinctWordsOfFile(filePath))
+                        {                            
                             if (!string.IsNullOrEmpty(word))
                             {
                                 if (wordCountDictionary.ContainsKey(word))
-                                {
                                     wordCountDictionary[word]++;
-                                }
-                                else
-                                {
-                                    wordCountDictionary.Add(word, 1);
-                                }
+                                else                                
+                                    wordCountDictionary.Add(word, 1);                                
                             }
                         }
                     }

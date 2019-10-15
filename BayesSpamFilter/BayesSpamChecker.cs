@@ -25,7 +25,7 @@ namespace BayesSpamFilter
         public double GetSpamProbability(string filePath)
         {
             if (File.Exists(filePath))
-            {
+            {                
                 var probabilitySum = 0d;
                 var allLines = File.ReadAllLines(filePath);
                 var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
@@ -33,7 +33,7 @@ namespace BayesSpamFilter
                 foreach (var word in words)
                 {
                     if (!string.IsNullOrEmpty(word))
-                    {
+                    {                        
                         if (WordInfoDictionary.Keys.Contains(word))
                         {
                             wordCount++;
@@ -50,6 +50,17 @@ namespace BayesSpamFilter
                 return probabilitySum / wordCount;
             }
             throw new FileNotFoundException();
+        }
+
+        public static List<string> GetDistinctWordsOfFile(string path)
+        {
+            if (!File.Exists(path)) throw new FileNotFoundException();
+
+            var allLines = File.ReadAllLines(path);
+            var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
+
+            return words;
+
         }
     }
 }

@@ -32,6 +32,7 @@ namespace BayesSpamFilter
             PrintHeader();
             InitFilePaths();
 
+            //Aufgabe 2a
             PrintPhaseStart("learning");
             BuildWordInfoDictionary();
             PrintPhaseEnd("learning");
@@ -69,6 +70,12 @@ namespace BayesSpamFilter
             Console.WriteLine("------------------------------------------------");
         }
 
+        /// <summary>
+        /// The threshold will be adjusted by +0.0025 until:
+        /// the ratio for all wrongly marked spam files > the ratio for all wrongly marked ham files
+        /// </summary>
+        /// <param name="hamCalibrationPath">path to the ham callibration folder</param>
+        /// <param name="spamCalibrationPath">path to the spam callibration folder</param>
         private void CalibrateThreshold(string hamCalibrationPath, string spamCalibrationPath)
         {
             if (Directory.Exists(hamCalibrationPath) && Directory.Exists(spamCalibrationPath))
@@ -76,51 +83,29 @@ namespace BayesSpamFilter
                 var spamChecker = new SpamChecker(wordInfoDictionary);
                 var hamFilePaths = Directory.GetFiles(hamCalibrationPath);
                 var spamFilePaths = Directory.GetFiles(spamCalibrationPath);
-                var hamMarkedAsSpam = int.MaxValue;
-                var spamMarkedAsHam = int.MaxValue;
+                var hamMarkedAsSpam = 0;
+                var spamMarkedAsHam = 0;
                 var hamMarkedAsSpamRatio = 0d;
                 var spamMarkedAsHamRatio = 0d;
 
 
-                while (hamMarkedAsSpamRatio >= spamMarkedAsHamRatio)
+                do
                 {
-                    hamMarkedAsSpam = 0;
-                    spamMarkedAsHam = 0;
-
-                    foreach (var hamFilePath in hamFilePaths)
-                    {
-                        var spamProbability = spamChecker.GetSpamProbability(hamFilePath);
-                        if (spamProbability >= threshold)
-                        {
-                            hamMarkedAsSpam++;
-                        }
-                    }
-
-                    foreach (var spamFilePath in spamFilePaths)
-                    {
-                        var spamProbability = spamChecker.GetSpamProbability(spamFilePath);
-                        if (spamProbability < threshold)
-                        {
-                            spamMarkedAsHam++;
-                        }
-                    }
+                    hamMarkedAsSpam = GetHamMarkedAsSpamCounter(hamFilePaths, spamChecker);
+                    spamMarkedAsHam = GetSpamMarkedAsHamCounter(spamFilePaths, spamChecker);
 
                     hamMarkedAsSpamRatio = (double)hamMarkedAsSpam / hamFilePaths.Length;
                     spamMarkedAsHamRatio = (double)spamMarkedAsHam / spamFilePaths.Length;
 
-                    if (hamMarkedAsSpamRatio >= spamMarkedAsHamRatio)
-                    {
-                        threshold += 0.0025;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Optimal threshold is {threshold}.");
-                        Console.WriteLine($"{hamMarkedAsSpam} Ham Mails of totally {hamFilePaths.Length} where marked as Spam.");
-                        Console.WriteLine($"{spamMarkedAsHam} Spam Mails of totally {spamFilePaths.Length} where marked as Ham.");
-                        Console.WriteLine($"Ham Error Ration:  {Math.Round(hamMarkedAsSpamRatio * 100, 4, MidpointRounding.ToEven)}%.");
-                        Console.WriteLine($"Spam Error Ration: {Math.Round(spamMarkedAsHamRatio * 100, 4, MidpointRounding.ToEven)}%.");
-                    }
-                }
+                    threshold += 0.0025;
+
+                } while (hamMarkedAsSpamRatio >= spamMarkedAsHamRatio);
+
+                Console.WriteLine($"Optimal threshold is {threshold}.");
+                Console.WriteLine($"{hamMarkedAsSpam} Ham Mails of totally {hamFilePaths.Length} where marked as Spam.");
+                Console.WriteLine($"{spamMarkedAsHam} Spam Mails of totally {spamFilePaths.Length} where marked as Ham.");
+                Console.WriteLine($"Ham Error Ratio:  {Math.Round(hamMarkedAsSpamRatio * 100, 4, MidpointRounding.ToEven)}%.");
+                Console.WriteLine($"Spam Error Ratio: {Math.Round(spamMarkedAsHamRatio * 100, 4, MidpointRounding.ToEven)}%.");
             }
             else
             {
@@ -128,11 +113,34 @@ namespace BayesSpamFilter
             }
         }
 
+        private int GetHamMarkedAsSpamCounter(string[] hamFilePaths, SpamChecker spamChecker)
+        {
+            var hamMarkedAsSpam = 0;
+            foreach (var hamFilePath in hamFilePaths)
+            {
+                var spamProbability = spamChecker.GetSpamProbability(hamFilePath);
+                if (spamProbability >= threshold) hamMarkedAsSpam++;
+
+            }
+            return hamMarkedAsSpam;
+        }
+
+        private int GetSpamMarkedAsHamCounter(string[] spamFilePaths, SpamChecker spamChecker)
+        {
+            var spamMarkedAsHam = 0;
+            foreach (var spamFilePath in spamFilePaths)
+            {
+                var spamProbability = spamChecker.GetSpamProbability(spamFilePath);
+                if (spamProbability < threshold) spamMarkedAsHam++;
+            }
+            return spamMarkedAsHam;
+        }
+
         private void RunBayesSpamFilter(string folderPath)
         {
             if (Directory.Exists(folderPath))
             {
-                var shouldBeSpam = folderPath.Contains("spam-test");
+                var isInSpamFolder = folderPath.Equals(spamTestPath);
                 List<double> errors = new List<double>();
 
                 var filePaths = Directory.GetFiles(folderPath);
@@ -141,17 +149,16 @@ namespace BayesSpamFilter
                 {
                     var spamProbability = spamChecker.GetSpamProbability(filePath);
 
-                    if (shouldBeSpam && spamProbability <= threshold)
+                    if (isInSpamFolder && spamProbability <= threshold)
                     {
-                        errors.Add(spamProbability);
+                        errors.Add(spamProbability);//these should be spam, but aren't maarked by our filter
                     }
-                    else if (!shouldBeSpam && spamProbability >= threshold)
+                    else if (!isInSpamFolder && spamProbability >= threshold)
                     {
-                        errors.Add(spamProbability);
+                        errors.Add(spamProbability);//these should be ham, but aren't marked by our filter
                     }
                 }
-
-                PrintTestResult(folderPath, shouldBeSpam, errors, filePaths);
+                PrintTestResult(folderPath, isInSpamFolder, errors, filePaths);
             }
             else
             {
@@ -164,7 +171,8 @@ namespace BayesSpamFilter
             Console.WriteLine($"Checked files in folder {folderPath}.");
             Console.WriteLine($"All files should have been marked as {(shouldBeSpam ? "Spam" : "Ham")}.");
             Console.WriteLine($"{errors.Count} of {filePaths.Length} {(shouldBeSpam ? "Spam" : "Ham")} Mails where marked as {(shouldBeSpam ? "Ham" : "Spam")}.");
-            Console.WriteLine($"Error Ration is {Math.Round((double)errors.Count / filePaths.Length * 100, 4, MidpointRounding.ToEven)}%.");
+            Console.WriteLine($"Error Ratio is {Math.Round((double)errors.Count / filePaths.Length * 100, 4, MidpointRounding.ToEven)}%.");
+            Console.WriteLine($"Error Ratio is {Math.Round((double)errors.Count / filePaths.Length * 100, 4, MidpointRounding.ToEven)}%.");
         }
 
         private void BuildWordInfoDictionary()
@@ -183,7 +191,6 @@ namespace BayesSpamFilter
         private Dictionary<string, WordProbabilityInfo> GetHamAndSpamCountDictionary(Dictionary<string, int> hamCountByWord, Dictionary<string, int> spamCountByWord)
         {
             var hamAndSpamCountDictionary = new Dictionary<string, WordProbabilityInfo>();
-
             var allWords = hamCountByWord.Keys.Concat(spamCountByWord.Keys).Distinct().ToList();
 
             foreach (var word in allWords)
@@ -194,7 +201,6 @@ namespace BayesSpamFilter
                 var spamProbability = spamCount / spamFileCount;
                 hamAndSpamCountDictionary.Add(word, new WordProbabilityInfo(hamProbability, spamProbability));
             }
-
             return hamAndSpamCountDictionary;
         }
 
