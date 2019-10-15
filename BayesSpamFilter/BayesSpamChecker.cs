@@ -8,31 +8,45 @@ namespace BayesSpamFilter
     {
         public Dictionary<string, WordProbabilityInfo> WordInfoDictionary { get; }
 
+        /// <summary>
+        /// Class that contains the Bayes logic.
+        /// </summary>
+        /// <param name="wordInfoDictionary"> Dictionary with the word as the key and a WordProbabilityInfo as the value. </param>
         public SpamChecker(Dictionary<string, WordProbabilityInfo> wordInfoDictionary)
         {
             WordInfoDictionary = wordInfoDictionary;
         }
 
+        /// <summary>
+        /// Calculates the spam probability of an email by using naive Bayes algorithm.
+        /// </summary>
+        /// <param name="filePath"> Path to the email message. </param>
+        /// <returns> A double Value between one and zero. 1 Meaning 100 % spam, 0 meaning 0% spam probability. </returns>
         public double GetSpamProbability(string filePath)
         {
             if (File.Exists(filePath))
             {                
                 var probabilitySum = 0d;
-                var wordCount = 0;
-                foreach (var word in GetDistinctWordsOfFile(filePath))
+                var allLines = File.ReadAllLines(filePath);
+                var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
+                var wordCount = 0; // The number of words in the email contained in the WordInfoDictionary.
+                foreach (var word in words)
                 {
                     if (!string.IsNullOrEmpty(word))
                     {                        
                         if (WordInfoDictionary.Keys.Contains(word))
                         {
                             wordCount++;
+                            // Calculate the probability of a given Word to be spam.
                             var wordProbability = WordInfoDictionary[word].SpamProbability /
                                                   (WordInfoDictionary[word].SpamProbability + WordInfoDictionary[word].HamProbability);
+                            // Adding the spam probability the word to the overall spam probability.
                             probabilitySum += wordProbability;
                         }
                     }
                 }
 
+                // Calculate the probability by dividing the sum of all spam probabilities by the number of words.
                 return probabilitySum / wordCount;
             }
             throw new FileNotFoundException();
