@@ -25,7 +25,7 @@ namespace BayesSpamFilter
         public double GetSpamProbability(string filePath)
         {
             if (File.Exists(filePath))
-            {                
+            {
                 var probabilitySum = 0d;
                 var allLines = File.ReadAllLines(filePath);
                 var words = allLines.Select(l => l.ToLowerInvariant().Split(' ')).SelectMany(w => w).Distinct().ToList();
@@ -33,9 +33,13 @@ namespace BayesSpamFilter
                 foreach (var word in words)
                 {
                     if (!string.IsNullOrEmpty(word))
-                    {                        
+                    {
                         if (WordInfoDictionary.Keys.Contains(word))
                         {
+                            // This calculation is not really Bayes anymore. We had lots of underflow errors because of multiplication with very small numbers.
+                            // We tried it with https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering#Combining_individual_probabilities which did not work.
+                            // We also had a look at https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering#Other_expression_of_the_formula_for_combining_individual_probabilities. Still no lock.
+                            // The decision was to use the basic idea of Kolmogoroff.
                             wordCount++;
                             // Calculate the probability of a given Word to be spam.
                             var wordProbability = WordInfoDictionary[word].SpamProbability /
