@@ -1,0 +1,25 @@
+﻿(a) Idee des Bloom-Filters, mit Vor- und Nachteilen 
+(b) ein konkretes Beispiel aus der Praxis, wo der Bloom-Filter verwendet wird mit kurzer Beschreibung dieses Programms 
+(c) Eine Beschreibung, wie Sie die Fehlerwahrscheinlichkeit ihrer Datenstruktur getestet haben und welche Resultate dabei erzielt worden sind. 
+    Fügen Sie ein Screenshot der Ausgabe ein.
+
+
+a)
+(wikipedia)
+Ein Bloom-Filter ist eine probabilistische Datenstruktur, mit deren Hilfe sehr schnell festgestellt werden kann, welche Daten in einem Datenstrom schon einmal vorgekommen sind und welche erstmals auftreten. 
+Hierzu wird mit einer geeigneten Zahl von Hash-Funktionen ein „Fingerabdruck“ des gelesenen Datensatzes in einer einzeiligen Hashtabelle hinterlassen.
+
++Braucht sehr wenig Speicherplatz
++Ist sehr effizient und schnell
+-Es sind falsch positive Werte enthalten
+-Es ist schwierig auf bestehende Date einen BloomFilter zu erstellen
+-Es speichert nichts und man kann keine Abfragen darauf machen
+
+b)
+Simplified Payment Verification (SPV) ist eine Methode, die von einigen Thin Clients innerhalb des Bitcoin-Netzwerks eingesetzt wird, um Transaktionen zu überprüfen, ohne dass eine vollständige Kopie der Blockchain aufbewahrt werden muss.
+Daher verwenden diese dünnen Knoten Bloom-Filter, um nur die Transaktionen anzugeben, für die sie an Updates interessiert sind.
+
+c)
+-Zum Testen unserer Parameter haben wir folgende Website genutzt:
+https://hur.st/bloomfilter/
+-Insert picture of whatsapp
