@@ -43,6 +43,7 @@ namespace BloomFilter
             foreach (var hashAlgorithm in hashFunctions)
             {
                 // Position is calculated by the hashCode of the word.
+                // Source: https://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.utf8?view=netframework-4.8
                 // Modulo is used, since the hash code could be greater than the array length.
                 var position = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(word)).GetHashCode() % bloomFilter.Length;
                 bloomFilter[position] = 1;
@@ -59,6 +60,7 @@ namespace BloomFilter
             foreach (var hashAlgorithm in hashFunctions)
             {
                 // Position is calculated by the hashCode of the word.
+                // Source: https://docs.microsoft.com/en-us/dotnet/api/system.text.encoding.utf8?view=netframework-4.8
                 // Modulo is used, since the hash code could be greater than the array length.
                 var position = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(word)).GetHashCode() % bloomFilter.Length;
 
